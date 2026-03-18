@@ -1,0 +1,14 @@
+fastapi==0.135.1
+uvicorn==0.42.0
+python-dotenv==1.2.2
+pydantic==2.12.5
+pymupdf==1.27.2
+python-docx==1.2.0
+pillow==12.1.1
+groq==1.1.1
+easyocr==1.7.2
+numpy==2.4.3
+
+# Optional - requires C++ build tools on some systems
+# Uncomment to enable Supabase features:
+# supabase==2.28.2
