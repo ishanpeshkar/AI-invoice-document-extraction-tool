@@ -4,8 +4,10 @@ python-multipart
 python-dotenv
 groq
 pillow
-easyocr
 pymupdf
 python-docx
 psycopg2-binary
 requests
+# easyocr and its torch dependency (~8 GB) are excluded from the base image to
+# stay within Railway's 4 GB image size limit. The "ai" extraction mode works
+# without it. To enable OCR mode, install manually: pip install easyocr

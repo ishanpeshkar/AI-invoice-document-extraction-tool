@@ -1,0 +1,18 @@
+# Railpack configuration for AI Invoice Extraction Tool
+#
+# easyocr and its torch dependency are NOT installed in the base image.
+# Together they add ~8 GB, which exceeds Railway's 4 GB image size limit.
+#
+# The default "ai" extraction mode uses Groq LLM and works without easyocr.
+# OCR mode is available but requires easyocr to be installed at runtime:
+#   pip install easyocr
+#
+# If you need OCR mode baked into the image, add easyocr back to
+# requirements.txt and use a custom Dockerfile with a larger base image,
+# or split the service into two deployments (ai-only and ocr-capable).
+
+[deploy]
+startCommand = "uvicorn main:app --host 0.0.0.0 --port $PORT"
+
+[build]
+builder = "nixpacks"

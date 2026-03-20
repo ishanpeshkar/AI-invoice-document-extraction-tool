@@ -1,3 +1,8 @@
+# easyocr (and its torch dependency) are intentionally excluded from
+# requirements.txt to keep the Docker image under Railway's 4 GB limit.
+# The default "ai" extraction mode (Groq LLM) works without them.
+# OCR mode requires a manual: pip install easyocr
+
 [phases.build]
 cmds = ["pip install -r requirements.txt"]
 

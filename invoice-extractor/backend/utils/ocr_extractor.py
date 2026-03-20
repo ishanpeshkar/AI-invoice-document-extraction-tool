@@ -1,18 +1,31 @@
 import os
 import io
 import fitz  # PyMuPDF
-import numpy as np
 from PIL import Image
 from utils.ai_extractor import extract_from_text
 
-# Lazy load easyocr to avoid slow startup
+# easyocr and numpy are lazy-loaded: they are not installed in the base Railway
+# image (removing them keeps the image under the 4 GB limit). They are only
+# imported here when OCR mode is actually invoked at runtime.
 _reader = None
 
 def get_ocr_reader():
-    """Lazy-load EasyOCR reader on first use."""
+    """Lazy-load EasyOCR reader on first use.
+
+    Raises a descriptive RuntimeError when easyocr is not installed so the
+    caller can surface a helpful message instead of a bare ImportError.
+    """
     global _reader
     if _reader is None:
-        import easyocr
+        try:
+            import easyocr
+        except ImportError:
+            raise RuntimeError(
+                "easyocr is not installed in this environment. "
+                "OCR mode is disabled to keep the Docker image under Railway's "
+                "4 GB size limit. Use 'ai' extraction mode instead, or install "
+                "easyocr manually (pip install easyocr) in a custom environment."
+            )
         _reader = easyocr.Reader(['en'], gpu=False)
     return _reader
 
@@ -35,6 +48,7 @@ def image_bytes_to_pil(file_bytes: bytes) -> Image.Image:
 
 def run_ocr_on_image(pil_image: Image.Image) -> str:
     """Run EasyOCR on a PIL image and return extracted text."""
+    import numpy as np  # lazy import — numpy ships with easyocr, not base image
     reader = get_ocr_reader()
     img_array = np.array(pil_image)
     results = reader.readtext(img_array, detail=0, paragraph=True)
