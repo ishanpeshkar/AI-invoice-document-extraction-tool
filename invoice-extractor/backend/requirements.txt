@@ -4,7 +4,6 @@ python-multipart
 python-dotenv
 groq
 pillow
-easyocr
 pymupdf
 python-docx
 psycopg2-binary

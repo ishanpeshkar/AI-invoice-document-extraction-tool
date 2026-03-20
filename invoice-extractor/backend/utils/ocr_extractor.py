@@ -1,12 +1,19 @@
 import os
 import io
 import fitz  # PyMuPDF
-import numpy as np
 from PIL import Image
 from utils.ai_extractor import extract_from_text
 
-# Lazy load easyocr to avoid slow startup
-_reader = None
+# Try to import EasyOCR — only available locally, not in production
+try:
+    import numpy as np
+    import easyocr
+    _reader = None
+    OCR_AVAILABLE = True
+except ImportError:
+    OCR_AVAILABLE = False
+    _reader = None
+
 
 def get_ocr_reader():
     """Lazy-load EasyOCR reader on first use."""
@@ -35,6 +42,7 @@ def image_bytes_to_pil(file_bytes: bytes) -> Image.Image:
 
 def run_ocr_on_image(pil_image: Image.Image) -> str:
     """Run EasyOCR on a PIL image and return extracted text."""
+    import numpy as np
     reader = get_ocr_reader()
     img_array = np.array(pil_image)
     results = reader.readtext(img_array, detail=0, paragraph=True)
@@ -49,11 +57,17 @@ def extract_via_ocr(file_bytes: bytes, content_type: str) -> dict:
     3. Combine raw text
     4. Pass to LLM for structured extraction
     """
+    if not OCR_AVAILABLE:
+        raise ValueError(
+            "OCR mode is not available in this environment. "
+            "Please use AI Direct mode instead."
+        )
+
     raw_text_pages = []
 
     if content_type == "application/pdf":
         images = pdf_to_images(file_bytes)
-        for img in images[:3]:  # limit to first 3 pages
+        for img in images[:3]:
             text = run_ocr_on_image(img)
             raw_text_pages.append(text)
 
@@ -67,8 +81,7 @@ def extract_via_ocr(file_bytes: bytes, content_type: str) -> dict:
 
     combined_text = "\n\n".join(raw_text_pages)
 
-    # Pass OCR text to LLM for structured extraction
     extracted = extract_from_text(combined_text)
-    extracted["_ocr_raw_text"] = combined_text  # store raw OCR output for debugging
+    extracted["_ocr_raw_text"] = combined_text
 
     return extracted
