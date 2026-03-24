@@ -85,7 +85,7 @@ export default function UploadPage() {
       </div>
 
       {/* Extraction Mode Toggle */}
-      <div className="mb-6">
+      {/* <div className="mb-6">
         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
           Extraction Mode
         </p>
@@ -111,7 +111,7 @@ export default function UploadPage() {
             🔍 OCR Pipeline
           </button>
         </div>
-      </div>
+      </div> */}
 
       {/* Tabs */}
       <div className="flex border-b border-gray-200 mb-6">
