@@ -6,11 +6,17 @@ from groq import Groq
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 EXTRACTION_PROMPT = """
-You are an expert invoice data extraction system.
-Extract all available fields from this invoice document and return ONLY a valid JSON object.
-Do not include any explanation, markdown, or extra text — just the raw JSON.
+You are an expert invoice data extraction system. The document may be in any language - extract all fields regardless of language and return values exactly as they appear.
 
-Required JSON structure:
+The document may contain handwritten, printed, or scanned text. Extract all readable fields.
+
+CRITICAL VENDOR RULE:
+- The VENDOR is the company that ISSUED/SENT the invoice - the seller or service provider. They appear in the "From:", "Issued by:", or header/logo section.
+- The "To:", "Bill To:", or "Buyer" field is the CUSTOMER - do NOT extract this as the vendor.
+- If unclear, the vendor is whoever is receiving the payment.
+
+Return ONLY a valid JSON object. No explanation, no markdown, no extra text.
+
 {
   "vendor_name": "string or null",
   "gstin": "string or null",
@@ -34,10 +40,11 @@ Required JSON structure:
 }
 
 Rules:
-- Use null for any field not found in the document
-- Keep all numeric values as strings (preserve original formatting)
+- Use null for any field not found
+- Keep all numeric values as strings
 - Extract ALL line items found
-- For invoice_date, preserve the original format from the document
+- Preserve original date format
+- If the document has multiple pages, extract data from all pages and merge line items
 """
 
 
@@ -46,7 +53,7 @@ def extract_from_images(base64_images: list[str]) -> dict:
 
     # Build image content blocks (use first 3 pages max to stay within limits)
     image_content = []
-    for b64 in base64_images[:3]:
+    for b64 in base64_images[:10]:
         image_content.append({
             "type": "image_url",
             "image_url": {

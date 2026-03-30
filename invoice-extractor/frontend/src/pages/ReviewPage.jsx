@@ -155,6 +155,11 @@ export default function ReviewPage() {
           <p className="text-sm text-gray-500 mt-1">
             Check and edit the fields below before saving.
           </p>
+          {location.state?.extracted?.pages_skipped > 0 && (
+            <div className="mt-3 mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-700">
+              Warning: This document has {location.state.extracted.page_count} pages - only {location.state.extracted.pages_processed} were processed. For full extraction, split the document into smaller files.
+            </div>
+          )}
         </div>
         <div className="flex gap-2">
           <button

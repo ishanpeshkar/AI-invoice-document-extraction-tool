@@ -39,6 +39,8 @@ async def extract_from_file(
 
     file_bytes = await file.read()
 
+    prepared = None
+
     try:
         # Step 1 — Extract
         if extraction_mode == "ocr":
@@ -51,6 +53,9 @@ async def extract_from_file(
                 extracted = extract_from_images(prepared["data"])
             else:
                 extracted = extract_from_text(prepared["data"])
+
+        page_count = len(prepared["data"]) if prepared and prepared["type"] == "images" else 1
+        pages_processed = min(page_count, 3)
 
         # Step 2/3 — Persist to Supabase when available.
         # If Supabase is not installed/configured, still return extraction result.
@@ -76,6 +81,9 @@ async def extract_from_file(
             "file_name": file.filename,
             "file_type": file_type,
             "file_url": file_url,
+            "page_count": page_count,
+            "pages_processed": pages_processed,
+            "pages_skipped": max(0, page_count - pages_processed),
             "data": extracted
         }
         if warning:

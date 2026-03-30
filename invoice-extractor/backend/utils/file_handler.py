@@ -31,13 +31,25 @@ def pdf_to_base64_images(file_bytes: bytes) -> list[str]:
 
 
 def image_to_base64(file_bytes: bytes, content_type: str) -> str:
-    """Convert an image file to a base64 string."""
-    image = Image.open(io.BytesIO(file_bytes))
-    # Normalize to RGB PNG
+    """Convert image to base64 with preprocessing for better AI extraction."""
+    image = Image.open(io.BytesIO(file_bytes)).convert("RGB")
+
+    # Upscale small images - vision models work better on larger images
+    width, height = image.size
+    if width < 1000 or height < 1000:
+        scale = max(1000 / width, 1000 / height)
+        new_size = (int(width * scale), int(height * scale))
+        image = image.resize(new_size, Image.LANCZOS)
+
+    # Enhance contrast and sharpness for better text visibility
+    from PIL import ImageEnhance
+
+    image = ImageEnhance.Contrast(image).enhance(1.5)
+    image = ImageEnhance.Sharpness(image).enhance(2.0)
+
     buffer = io.BytesIO()
-    image.convert("RGB").save(buffer, format="PNG")
-    b64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
-    return b64
+    image.save(buffer, format="PNG", optimize=True)
+    return base64.b64encode(buffer.getvalue()).decode("utf-8")
 
 
 def docx_to_text(file_bytes: bytes) -> str:

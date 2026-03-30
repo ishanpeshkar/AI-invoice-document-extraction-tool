@@ -34,24 +34,33 @@ Built as part of an AI internship at EmergeFlow Technologies.
 
 ## Project Structure
 ```
-invoice-extractor/
-├── frontend/                   # React + Tailwind + Vite
-│   └── src/
-│       ├── pages/              # UploadPage, ReviewPage, DashboardPage
-│       ├── components/
-│       │   └── layout/         # Sidebar, Layout shell
-│       └── services/
-│           └── api.js          # Axios API calls
-│
-└── backend/                    # Python FastAPI
-    ├── main.py                 # App entry point + CORS
-    ├── routers/
-    │   └── extract.py          # /extract, /extract-text, /confirm, /reject, /invoices
-    └── utils/
-        ├── file_handler.py     # PDF/image/DOCX → base64 or text
-        ├── ai_extractor.py     # Groq vision + text extraction
-        ├── ocr_extractor.py    # EasyOCR pipeline
-        └── supabase_service.py # DB reads/writes + file storage
+Data-Extraction-Tool/
+├── README.md
+├── requirements.txt
+├── TestImagePDF/               # Sample test files
+└── invoice-extractor/
+  ├── backend/                # Python FastAPI API layer
+  │   ├── main.py             # App entry point + CORS
+  │   ├── requirements.txt
+  │   ├── runtime.txt
+  │   ├── Procfile
+  │   ├── nixpacks.toml
+  │   ├── routers/
+  │   │   └── extract.py      # /extract, /extract-text, /confirm, /reject, /invoices
+  │   └── utils/
+  │       ├── file_handler.py     # PDF/image/DOCX preparation
+  │       ├── ai_extractor.py     # Groq vision + text extraction
+  │       ├── ocr_extractor.py    # OCR pipeline
+  │       └── supabase_service.py # DB and file storage operations
+  └── frontend/               # React + Vite UI
+    ├── package.json
+    ├── index.html
+    └── src/
+      ├── pages/          # UploadPage, ReviewPage, DashboardPage
+      ├── components/
+      │   └── layout/     # Layout shell
+      └── services/
+        └── api.js      # API calls
 ```
 
 ---
@@ -70,21 +79,20 @@ invoice-extractor/
 ### 1. Clone the repo
 ```bash
 git clone https://github.com/your-username/automated-invoice-document-data-extraction-tool.git
-cd automated-invoice-document-data-extraction-tool
+cd Data-Extraction-Tool
 ```
 
 ### 2. Backend setup
 ```bash
-cd backend
+cd invoice-extractor/backend
 python -m venv venv
 venv\Scripts\activate        # Windows
 # source venv/bin/activate   # Mac/Linux
 
-pip install fastapi uvicorn python-multipart python-dotenv \
-    groq pillow easyocr pymupdf python-docx psycopg2-binary requests
+pip install -r requirements.txt
 ```
 
-Create `backend/.env`:
+Create `invoice-extractor/backend/.env`:
 ```env
 GROQ_API_KEY=your_groq_api_key_here
 SUPABASE_URL=https://your-project.supabase.co
@@ -136,7 +144,7 @@ Also create a storage bucket named `invoices` and set it to public.
 
 ### 4. Frontend setup
 ```bash
-cd frontend
+cd invoice-extractor/frontend
 npm install
 npm run dev
 ```
