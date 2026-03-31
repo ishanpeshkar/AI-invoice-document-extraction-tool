@@ -1,7 +1,6 @@
 import fitz
 import io
-from PIL import Image
-import numpy as np
+from PIL import Image, ImageStat
 
 def classify_document(file_bytes: bytes, content_type: str) -> dict:
     """
@@ -76,8 +75,8 @@ def _classify_image(file_bytes: bytes) -> dict:
     width, height = image.size
 
     # Check image quality
-    img_array = np.array(image.convert("L"))
-    contrast = float(img_array.std())
+    gray = image.convert("L")
+    contrast = float(ImageStat.Stat(gray).stddev[0])
 
     if contrast < 30:
         return {

@@ -89,6 +89,11 @@ export default function ReviewPage() {
   const raw =
     location.state?.extracted?.data ?? location.state?.extracted ?? {};
   const invoiceId = location.state?.extracted?.invoice_id ?? null;
+  const classification = location.state?.extracted?.doc_classification ?? null;
+  const confidence = classification?.confidence ?? "low";
+  const docType = (classification?.doc_type ?? "unknown")
+    .replaceAll("_", " ")
+    .toUpperCase();
 
   const [data, setData] = useState({
     vendor_name: raw.vendor_name ?? "",
@@ -157,34 +162,26 @@ export default function ReviewPage() {
             Check and edit the fields below before saving.
           </p>
           {/* Document Classification Badge */}
-          {location.state?.extracted?.doc_classification && (
+          {classification && (
             <div className="mb-6 flex items-center gap-3 flex-wrap">
               <span className="px-3 py-1 bg-blue-50 border border-blue-200 rounded-full text-xs font-medium text-blue-700">
-                📄{" "}
-                {location.state.extracted.doc_classification.doc_type
-                  .replace("_", " ")
-                  .toUpperCase()}
+                📄 {docType}
               </span>
               <span
                 className={`px-3 py-1 rounded-full text-xs font-medium border ${
-                  location.state.extracted.doc_classification.confidence ===
-                  "high"
+                  confidence === "high"
                     ? "bg-green-50 border-green-200 text-green-700"
-                    : location.state.extracted.doc_classification.confidence ===
-                        "medium"
+                    : confidence === "medium"
                       ? "bg-yellow-50 border-yellow-200 text-yellow-700"
                       : "bg-red-50 border-red-200 text-red-700"
                 }`}
               >
-                {location.state.extracted.doc_classification.confidence ===
-                "high"
+                {confidence === "high"
                   ? "✅"
-                  : location.state.extracted.doc_classification.confidence ===
-                      "medium"
+                  : confidence === "medium"
                     ? "⚠️"
                     : "🔴"}{" "}
-                Confidence:{" "}
-                {location.state.extracted.doc_classification.confidence}
+                Confidence: {confidence}
               </span>
               {location.state.extracted.page_count > 1 && (
                 <span className="px-3 py-1 bg-purple-50 border border-purple-200 rounded-full text-xs font-medium text-purple-700">
@@ -192,7 +189,7 @@ export default function ReviewPage() {
                 </span>
               )}
               <p className="text-xs text-gray-400 w-full">
-                {location.state.extracted.doc_classification.notes}
+                {classification?.notes ?? "Document classification metadata available."}
               </p>
             </div>
           )}
