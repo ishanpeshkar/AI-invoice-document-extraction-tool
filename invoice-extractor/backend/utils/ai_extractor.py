@@ -2,7 +2,12 @@ import os
 import json
 from groq import Groq
 
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+def _get_client() -> Groq:
+    """Create Groq client lazily to avoid crashing app startup on missing env vars."""
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        raise RuntimeError("GROQ_API_KEY is not set")
+    return Groq(api_key=api_key)
 
 EXTRACTION_PROMPT = """
 You are an expert invoice and document data extraction system.
@@ -62,6 +67,7 @@ def _parse_response(raw_text: str) -> dict:
 
 def extract_from_images(base64_images: list[str]) -> dict:
     """Send base64 images to Groq vision model."""
+    client = _get_client()
     image_content = []
     for b64 in base64_images:
         image_content.append({
@@ -81,6 +87,7 @@ def extract_from_images(base64_images: list[str]) -> dict:
 
 def extract_from_text(text: str) -> dict:
     """Send raw text to Groq LLM."""
+    client = _get_client()
     response = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=[{
