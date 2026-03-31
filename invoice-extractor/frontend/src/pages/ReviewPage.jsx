@@ -155,6 +155,32 @@ export default function ReviewPage() {
           <p className="text-sm text-gray-500 mt-1">
             Check and edit the fields below before saving.
           </p>
+          {/* Document Classification Badge */}
+{location.state?.extracted?.doc_classification && (
+  <div className="mb-6 flex items-center gap-3 flex-wrap">
+    <span className="px-3 py-1 bg-blue-50 border border-blue-200 rounded-full text-xs font-medium text-blue-700">
+      📄 {location.state.extracted.doc_classification.doc_type.replace("_", " ").toUpperCase()}
+    </span>
+    <span className={`px-3 py-1 rounded-full text-xs font-medium border ${
+      location.state.extracted.doc_classification.confidence === "high"
+        ? "bg-green-50 border-green-200 text-green-700"
+        : location.state.extracted.doc_classification.confidence === "medium"
+        ? "bg-yellow-50 border-yellow-200 text-yellow-700"
+        : "bg-red-50 border-red-200 text-red-700"
+    }`}>
+      {location.state.extracted.doc_classification.confidence === "high" ? "✅" :
+       location.state.extracted.doc_classification.confidence === "medium" ? "⚠️" : "🔴"} Confidence: {location.state.extracted.doc_classification.confidence}
+    </span>
+    {location.state.extracted.page_count > 1 && (
+      <span className="px-3 py-1 bg-purple-50 border border-purple-200 rounded-full text-xs font-medium text-purple-700">
+        📑 {location.state.extracted.page_count} pages processed
+      </span>
+    )}
+    <p className="text-xs text-gray-400 w-full">
+      {location.state.extracted.doc_classification.notes}
+    </p>
+  </div>
+)}
           {location.state?.extracted?.pages_skipped > 0 && (
             <div className="mt-3 mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-700">
               Warning: This document has {location.state.extracted.page_count} pages - only {location.state.extracted.pages_processed} were processed. For full extraction, split the document into smaller files.

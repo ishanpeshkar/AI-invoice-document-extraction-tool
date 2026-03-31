@@ -1,8 +1,8 @@
-import fitz  # PyMuPDF
+import fitz
 import base64
 import io
 from docx import Document
-from PIL import Image
+from PIL import Image, ImageEnhance
 
 SUPPORTED_TYPES = {
     "application/pdf": "pdf",
@@ -18,38 +18,61 @@ def get_file_type(content_type: str) -> str:
     return SUPPORTED_TYPES.get(content_type, "unknown")
 
 
-def pdf_to_base64_images(file_bytes: bytes) -> list[str]:
-    """Convert each page of a PDF to a base64 image string."""
-    doc = fitz.open(stream=file_bytes, filetype="pdf")
-    images = []
-    for page in doc:
-        pix = page.get_pixmap(dpi=200)
-        img_bytes = pix.tobytes("png")
-        b64 = base64.b64encode(img_bytes).decode("utf-8")
-        images.append(b64)
-    return images
+def preprocess_image(image: Image.Image) -> Image.Image:
+    """Enhance image quality for better AI extraction."""
+    image = image.convert("RGB")
 
-
-def image_to_base64(file_bytes: bytes, content_type: str) -> str:
-    """Convert image to base64 with preprocessing for better AI extraction."""
-    image = Image.open(io.BytesIO(file_bytes)).convert("RGB")
-
-    # Upscale small images - vision models work better on larger images
+    # Upscale small images
     width, height = image.size
-    if width < 1000 or height < 1000:
-        scale = max(1000 / width, 1000 / height)
+    if width < 1500 or height < 1500:
+        scale = max(1500 / width, 1500 / height)
         new_size = (int(width * scale), int(height * scale))
         image = image.resize(new_size, Image.LANCZOS)
 
-    # Enhance contrast and sharpness for better text visibility
-    from PIL import ImageEnhance
+    # Enhance contrast and sharpness
+    image = ImageEnhance.Contrast(image).enhance(1.8)
+    image = ImageEnhance.Sharpness(image).enhance(2.5)
+    image = ImageEnhance.Brightness(image).enhance(1.1)
 
-    image = ImageEnhance.Contrast(image).enhance(1.5)
-    image = ImageEnhance.Sharpness(image).enhance(2.0)
+    return image
 
+
+def image_to_base64(pil_image: Image.Image) -> str:
+    """Convert PIL image to base64 PNG string."""
     buffer = io.BytesIO()
-    image.save(buffer, format="PNG", optimize=True)
+    pil_image.convert("RGB").save(buffer, format="PNG", optimize=True)
     return base64.b64encode(buffer.getvalue()).decode("utf-8")
+
+
+def pdf_to_page_images(file_bytes: bytes) -> list[Image.Image]:
+    """Convert each PDF page to a PIL image."""
+    doc = fitz.open(stream=file_bytes, filetype="pdf")
+    images = []
+    for page in doc:
+        pix = page.get_pixmap(dpi=250)
+        img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+        images.append(img)
+    doc.close()
+    return images
+
+
+def pdf_to_base64_images(file_bytes: bytes) -> list[str]:
+    """Convert PDF pages to preprocessed base64 images."""
+    page_images = pdf_to_page_images(file_bytes)
+    result = []
+    for img in page_images:
+        processed = preprocess_image(img)
+        result.append(image_to_base64(processed))
+    return result
+
+
+def split_pdf_into_chunks(file_bytes: bytes, chunk_size: int = 3) -> list[list[str]]:
+    """Split PDF pages into chunks of base64 images for multipage processing."""
+    all_images = pdf_to_base64_images(file_bytes)
+    chunks = []
+    for i in range(0, len(all_images), chunk_size):
+        chunks.append(all_images[i:i + chunk_size])
+    return chunks
 
 
 def docx_to_text(file_bytes: bytes) -> str:
@@ -61,23 +84,28 @@ def docx_to_text(file_bytes: bytes) -> str:
 
 def prepare_file_for_extraction(file_bytes: bytes, content_type: str) -> dict:
     """
-    Returns a dict with:
-    - type: 'images' | 'text'
-    - data: list of base64 strings (for images/pdf) OR raw text string (for docx/text)
+    Returns unified extraction input.
+    For multipage PDFs returns multiple chunks.
     """
     file_type = get_file_type(content_type)
 
     if file_type == "pdf":
-        images = pdf_to_base64_images(file_bytes)
-        return {"type": "images", "data": images}
+        chunks = split_pdf_into_chunks(file_bytes, chunk_size=3)
+        return {
+            "type": "image_chunks",
+            "data": chunks,
+            "page_count": sum(len(c) for c in chunks)
+        }
 
     elif file_type == "image":
-        b64 = image_to_base64(file_bytes, content_type)
-        return {"type": "images", "data": [b64]}
+        img = Image.open(io.BytesIO(file_bytes))
+        processed = preprocess_image(img)
+        b64 = image_to_base64(processed)
+        return {"type": "images", "data": [b64], "page_count": 1}
 
     elif file_type == "docx":
         text = docx_to_text(file_bytes)
-        return {"type": "text", "data": text}
+        return {"type": "text", "data": text, "page_count": 1}
 
     else:
         raise ValueError(f"Unsupported file type: {content_type}")
